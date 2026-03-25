@@ -7,6 +7,7 @@ from core.storage.storagemanager import StorageManager
 from core.storage.swiftmanager import SwiftManager
 from core.storage.plain_fs import FilesystemManager
 from core.storage.s3manager import S3Manager
+from core.storage.azure_datalake_manager import AzureDataLakeManager
 
 
 def connect_storage(settings) -> StorageManager:
@@ -21,6 +22,9 @@ def connect_storage(settings) -> StorageManager:
         return FilesystemManager(settings.MEDIA_ROOT)
     elif storage_name == 'S3Storage':
         return S3Manager(settings.S3_BUCKET_NAME, settings.S3_CONNECTION_PARAMS)
+    elif storage_name == 'AzureDataLakeStorage':
+        return AzureDataLakeManager(settings.AZURE_DATALAKE_FILESYSTEM_NAME,
+                                    settings.AZURE_DATALAKE_CONNECTION_PARAMS)
     raise ValueError(f'Unsupported storage system: {storage_name}')
 
 

@@ -90,7 +90,7 @@ for app in ['collectionjson', 'core', 'feeds', 'plugins', 'plugininstances',
 
 # Storage Settings
 STORAGE_ENV = os.getenv('STORAGE_ENV', 'swift')
-if STORAGE_ENV not in ('swift', 'fslink', 'filesystem', 's3'):
+if STORAGE_ENV not in ('swift', 'fslink', 'filesystem', 's3', 'azure_datalake'):
     raise ImproperlyConfigured(f"Unsupported value '{STORAGE_ENV}' for STORAGE_ENV")
 
 STORAGES['default'] = {'BACKEND': 'swift.storage.SwiftStorage'}
@@ -104,6 +104,8 @@ SWIFT_CONNECTION_PARAMS = {'user': SWIFT_USERNAME,
 MEDIA_ROOT = None
 S3_BUCKET_NAME = None
 S3_CONNECTION_PARAMS = None
+AZURE_DATALAKE_FILESYSTEM_NAME = None
+AZURE_DATALAKE_CONNECTION_PARAMS = None
 
 if STORAGE_ENV in ('fslink', 'filesystem'):
     STORAGES['default'] = {'BACKEND': 'django.core.files.storage.FileSystemStorage'}
@@ -117,6 +119,21 @@ elif STORAGE_ENV == 's3':
         'secret_key': os.getenv('S3_SECRET_KEY', 'minioadmin'),
         'region_name': os.getenv('S3_REGION', None),
     }
+elif STORAGE_ENV == 'azure_datalake':
+    STORAGES['default'] = {'BACKEND': 'azure.storage.AzureDataLakeStorage'}
+    AZURE_DATALAKE_FILESYSTEM_NAME = os.getenv('AZURE_DATALAKE_FILESYSTEM_NAME', 'users')
+    _azure_conn_string = os.getenv('AZURE_DATALAKE_CONNECTION_STRING', '')
+    if _azure_conn_string:
+        # Azurite / dev: use connection string (account name in path, not hostname)
+        AZURE_DATALAKE_CONNECTION_PARAMS = {
+            'connection_string': _azure_conn_string,
+        }
+    else:
+        # Real Azure: use account URL + key (or DefaultAzureCredential if key is empty)
+        AZURE_DATALAKE_CONNECTION_PARAMS = {
+            'account_url': os.getenv('AZURE_DATALAKE_ACCOUNT_URL'),
+            'account_key': os.getenv('AZURE_DATALAKE_ACCOUNT_KEY', ''),
+        }
 
 try:
     verify_storage_connection(
@@ -126,6 +143,8 @@ try:
         SWIFT_CONNECTION_PARAMS=SWIFT_CONNECTION_PARAMS,
         S3_BUCKET_NAME=S3_BUCKET_NAME,
         S3_CONNECTION_PARAMS=S3_CONNECTION_PARAMS,
+        AZURE_DATALAKE_FILESYSTEM_NAME=AZURE_DATALAKE_FILESYSTEM_NAME,
+        AZURE_DATALAKE_CONNECTION_PARAMS=AZURE_DATALAKE_CONNECTION_PARAMS,
     )
 except Exception as e:
     raise ImproperlyConfigured(str(e))
