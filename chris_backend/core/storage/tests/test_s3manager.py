@@ -18,7 +18,7 @@ Or locally (with MinIO running on localhost:9000):
     S3_ACCESS_KEY=minioadmin \
     S3_SECRET_KEY=minioadmin \
     S3_BUCKET_NAME=chris-test \
-    python tests/test_s3manager.py
+    python chris_backend/core/storage/tests/test_s3manager.py
 """
 
 import os
@@ -27,7 +27,7 @@ import importlib.util
 import unittest
 
 # Load s3manager directly to avoid core/__init__.py pulling in Django/Celery.
-_base = os.path.join(os.path.dirname(__file__), '..', 'chris_backend', 'core', 'storage')
+_base = os.path.join(os.path.dirname(__file__), '..')
 
 def _load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
