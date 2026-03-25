@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Integration tests for AzureDataLakeManager against Azurite (Azure Storage emulator).
+Integration tests for AzureDataLakeManager.
 
 Created: 2026-03-24
 Ticket: ASHAIW-13
@@ -8,17 +8,22 @@ Part of the ChRIS CUBE Azure ADLS Gen2 storage adapter work
 (feature/azure-adls-storage-adapter).
 
 Validates all StorageManager interface methods implemented by AzureDataLakeManager
-against a live Azurite instance — covers CRUD, atomic directory rename, recursive
-delete, server-side blob copy, and comma-sanitization logic.
+— covers CRUD, atomic directory rename, recursive delete, server-side blob copy,
+and comma-sanitization logic.
 
-Run via docker compose (recommended):
+NOTE: Azurite (Azure Storage emulator) does NOT support the ADLS Gen2 DFS API.
+Only the container-creation test passes against Azurite; all DFS-dependent tests
+are automatically skipped when targeting Azurite.  To run the full suite, point
+at a real Azure Storage account with hierarchical namespace enabled.
+
+Run against Azurite (container-creation smoke test only):
     docker compose -f docker-compose.azurite-test.yml up -d azurite
     docker compose -f docker-compose.azurite-test.yml run --rm azure-test
     docker compose -f docker-compose.azurite-test.yml down -v
 
-Or locally (with Azurite running on localhost:10000):
-    AZURE_DATALAKE_ACCOUNT_URL=http://127.0.0.1:10000/devstoreaccount1 \
-    AZURE_DATALAKE_ACCOUNT_KEY='Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==' \
+Run against a real Azure ADLS Gen2 account (full suite):
+    AZURE_DATALAKE_ACCOUNT_URL=https://<account>.dfs.core.windows.net \
+    AZURE_DATALAKE_ACCOUNT_KEY=<key> \
     AZURE_DATALAKE_FILESYSTEM_NAME=chris-test \
     python tests/test_azure_datalake_manager.py
 """
@@ -45,6 +50,19 @@ AzureDataLakeManager = _load_module(
     'azure_datalake_manager', os.path.join(_base, 'azure_datalake_manager.py')
 ).AzureDataLakeManager
 
+
+def _is_azurite():
+    """Return True when the test target is Azurite (no DFS API support)."""
+    url = os.environ.get('AZURE_DATALAKE_ACCOUNT_URL', '')
+    conn = os.environ.get('AZURE_DATALAKE_CONNECTION_STRING', '')
+    return 'devstoreaccount1' in url or 'devstoreaccount1' in conn or (not url and not conn)
+
+
+_SKIP_DFS = _is_azurite()
+_SKIP_DFS_REASON = (
+    'Azurite does not support the ADLS Gen2 DFS API — '
+    'run against a real Azure Storage account with HNS enabled'
+)
 
 _AZURITE_CONN_STR = (
     'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;'
@@ -87,6 +105,7 @@ class TestAzureDataLakeConnection(unittest.TestCase):
         self.manager.create_container()
 
 
+@unittest.skipIf(_SKIP_DFS, _SKIP_DFS_REASON)
 class TestAzureDataLakeCRUD(unittest.TestCase):
 
     @classmethod
@@ -152,6 +171,7 @@ class TestAzureDataLakeCRUD(unittest.TestCase):
         self.assertTrue(self.manager.obj_exists('test/src.txt'))
 
 
+@unittest.skipIf(_SKIP_DFS, _SKIP_DFS_REASON)
 class TestAzureDataLakePathOps(unittest.TestCase):
 
     @classmethod
@@ -228,6 +248,7 @@ class TestAzureDataLakePathOps(unittest.TestCase):
         self.assertTrue(self.manager.obj_exists('test/san2/good.txt'))
 
 
+@unittest.skipIf(_SKIP_DFS, _SKIP_DFS_REASON)
 class TestAzureDataLakeDICOMHierarchy(unittest.TestCase):
     """
     Tests that validate the DICOM-oriented hierarchy use case:

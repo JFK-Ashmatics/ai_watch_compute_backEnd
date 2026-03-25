@@ -185,7 +185,11 @@ class AzureDataLakeManager(StorageManager):
             contents = contents.encode('utf-8')
         fs = self.__get_fs_client()
         fc = fs.get_file_client(file_path)
-        fc.upload_data(contents, overwrite=True)
+        kwargs = {'overwrite': True}
+        if content_type:
+            from azure.storage.filedatalake import ContentSettings
+            kwargs['content_settings'] = ContentSettings(content_type=content_type)
+        fc.upload_data(contents, **kwargs)
 
     def download_obj(self, file_path: str) -> bytes:
         """
@@ -203,7 +207,16 @@ class AzureDataLakeManager(StorageManager):
         blob_service = self.__get_blob_service_client()
         source_blob = blob_service.get_blob_client(self.filesystem_name, src)
         dest_blob = blob_service.get_blob_client(self.filesystem_name, dst)
-        dest_blob.start_copy_from_url(source_blob.url)
+        copy = dest_blob.start_copy_from_url(source_blob.url)
+        # start_copy_from_url is asynchronous — poll until the copy completes
+        # so callers can safely read dst immediately after this method returns.
+        props = dest_blob.get_blob_properties()
+        while props.copy.status == 'pending':
+            props = dest_blob.get_blob_properties()
+        if props.copy.status != 'success':
+            raise RuntimeError(
+                f"Server-side copy failed: {props.copy.status} — {props.copy.status_description}"
+            )
 
     def delete_obj(self, file_path: str) -> None:
         """
@@ -277,18 +290,23 @@ class AzureDataLakeManager(StorageManager):
 
     def sanitize_obj_names(self, path: str) -> Dict[str, str]:
         """
-        Removes commas from the paths of all files and folders under the
-        specified input path.
+        Removes commas from the paths of all files under the specified input
+        path.
         Handles special cases:
             - Files with names that only contain commas and white spaces
               are deleted.
-            - "Folders" with names that only contain commas and white spaces
-              are removed after moving their contents to the parent folder.
+            - Files inside "folders" whose names only contain commas and
+              white spaces are moved to the parent folder (the comma-only
+              path component is collapsed).
 
         Returns a dictionary of modified file paths. Keys are original paths,
         values are new paths. Deleted files have the empty string as value.
 
         Uses atomic file renames for efficiency (no copy + delete needed).
+
+        NOTE: On ADLS Gen2, directories are real resources. This method
+        operates on files only (via ls()), so empty directory resources with
+        comma-only names may remain after their contents are moved/deleted.
         """
         new_obj_paths = {}
         l_ls = self.ls(path)
