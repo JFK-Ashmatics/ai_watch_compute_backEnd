@@ -125,6 +125,7 @@ class S3Manager(StorageManager):
                 if i == 4:
                     raise
                 time.sleep(0.4)
+        return False
 
     def obj_exists(self, file_path: str) -> bool:
         """
