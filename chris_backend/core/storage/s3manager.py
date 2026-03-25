@@ -72,8 +72,8 @@ class S3Manager(StorageManager):
         try:
             client.head_bucket(Bucket=self.bucket_name)
         except ClientError as e:
-            error_code = int(e.response['Error']['Code'])
-            if error_code == 404:
+            error_code = e.response.get('Error', {}).get('Code')
+            if error_code in ('404', 'NoSuchBucket', 404):
                 create_kwargs = {'Bucket': self.bucket_name}
                 region = self.conn_params.get('region_name')
                 if region and region != 'us-east-1':
