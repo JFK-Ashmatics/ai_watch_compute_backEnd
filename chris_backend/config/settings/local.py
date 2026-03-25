@@ -120,7 +120,7 @@ elif STORAGE_ENV == 's3':
         'region_name': os.getenv('S3_REGION', None),
     }
 elif STORAGE_ENV == 'azure_datalake':
-    STORAGES['default'] = {'BACKEND': 'azure.storage.AzureDataLakeStorage'}
+    STORAGES['default'] = {'BACKEND': 'django.core.files.storage.FileSystemStorage'}
     AZURE_DATALAKE_FILESYSTEM_NAME = os.getenv('AZURE_DATALAKE_FILESYSTEM_NAME', 'users')
     _azure_conn_string = os.getenv('AZURE_DATALAKE_CONNECTION_STRING', '')
     if _azure_conn_string:
