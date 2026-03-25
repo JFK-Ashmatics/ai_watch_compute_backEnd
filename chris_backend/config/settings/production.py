@@ -88,7 +88,7 @@ if STORAGE_ENV == 'swift':
         SWIFT_CONNECTION_PARAMS=SWIFT_CONNECTION_PARAMS
     )
 elif STORAGE_ENV == 's3':
-    STORAGES['default'] = {'BACKEND': 's3.storage.S3Storage'}
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage'}
     S3_BUCKET_NAME = get_secret('S3_BUCKET_NAME')
     S3_CONNECTION_PARAMS = {
         'endpoint_url': get_secret('S3_ENDPOINT_URL'),
