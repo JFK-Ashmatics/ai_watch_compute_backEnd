@@ -24,5 +24,8 @@ chris_backend/.bash_history
 chris_backend/.python_history
 chris_backend/.lesshist
 
+# env files with credentials
+*.env
+
 # created by `just prefer`
 .preference
