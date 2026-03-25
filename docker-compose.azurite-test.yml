@@ -1,0 +1,53 @@
+# Smoke-test compose for the Azure ADLS Gen2 storage adapter using Azurite.
+#
+# NOTE: Azurite does NOT support the ADLS Gen2 DFS API.  Only the
+# container-creation test will run here; all DFS-dependent tests are
+# automatically skipped.  For the full test suite, point at a real Azure
+# Storage account with hierarchical namespace (HNS) enabled — see the
+# test file docstring for details.
+#
+# Usage:
+#   docker compose -f docker-compose.azurite-test.yml up -d azurite
+#   docker compose -f docker-compose.azurite-test.yml run --rm azure-test
+#   docker compose -f docker-compose.azurite-test.yml down -v
+
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    # Blob, Queue, and Table endpoints only — Azurite has no DFS endpoint
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck
+    ports:
+      - "10000:10000"   # Blob
+      - "10001:10001"   # Queue
+      - "10002:10002"   # Table
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    networks:
+      - aztest
+
+  azure-test:
+    image: python:3.12-slim
+    working_dir: /opt/test
+    volumes:
+      - ./chris_backend:/opt/test/chris_backend:ro
+      - ./tests:/opt/test/tests:ro
+    environment:
+      # Azurite well-known dev connection string (account name in path, not hostname)
+      AZURE_DATALAKE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;DfsEndpoint=http://azurite:10000/devstoreaccount1;"
+      AZURE_DATALAKE_FILESYSTEM_NAME: "chris-test"
+    command: >
+      bash -c "
+        pip install -q azure-storage-file-datalake azure-storage-blob azure-identity &&
+        python tests/test_azure_datalake_manager.py
+      "
+    depends_on:
+      azurite:
+        condition: service_healthy
+    networks:
+      - aztest
+
+networks:
+  aztest:
