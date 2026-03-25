@@ -25,7 +25,7 @@ Run against a real Azure ADLS Gen2 account (full suite):
     AZURE_DATALAKE_ACCOUNT_URL=https://<account>.dfs.core.windows.net \
     AZURE_DATALAKE_ACCOUNT_KEY=<key> \
     AZURE_DATALAKE_FILESYSTEM_NAME=chris-test \
-    python tests/test_azure_datalake_manager.py
+    python chris_backend/core/storage/tests/test_azure_datalake_manager.py
 """
 
 import os
@@ -34,7 +34,7 @@ import importlib.util
 import unittest
 
 # Load azure_datalake_manager directly to avoid core/__init__.py pulling in Django/Celery.
-_base = os.path.join(os.path.dirname(__file__), '..', 'chris_backend', 'core', 'storage')
+_base = os.path.join(os.path.dirname(__file__), '..')
 
 
 def _load_module(name, path):
@@ -114,11 +114,10 @@ class TestAzureDataLakeCRUD(unittest.TestCase):
         cls.manager.create_container()
 
     def tearDown(self):
-        for key in self.manager.ls('test/'):
-            try:
-                self.manager.delete_obj(key)
-            except Exception:
-                pass
+        try:
+            self.manager.delete_path('test')
+        except Exception:
+            pass
 
     def test_upload_and_download_bytes(self):
         data = b'hello ChRIS from ADLS Gen2!'
@@ -180,11 +179,10 @@ class TestAzureDataLakePathOps(unittest.TestCase):
         cls.manager.create_container()
 
     def tearDown(self):
-        for key in self.manager.ls('test/'):
-            try:
-                self.manager.delete_obj(key)
-            except Exception:
-                pass
+        try:
+            self.manager.delete_path('test')
+        except Exception:
+            pass
 
     def test_copy_path(self):
         self.manager.upload_obj('test/cp/a.txt', b'a')
@@ -261,11 +259,10 @@ class TestAzureDataLakeDICOMHierarchy(unittest.TestCase):
         cls.manager.create_container()
 
     def tearDown(self):
-        for key in self.manager.ls('tenant-001/'):
-            try:
-                self.manager.delete_obj(key)
-            except Exception:
-                pass
+        try:
+            self.manager.delete_path('tenant-001')
+        except Exception:
+            pass
 
     def test_study_ingest_and_flush(self):
         """Simulate: ingest a DICOM study, process it, then flush the entire study."""
