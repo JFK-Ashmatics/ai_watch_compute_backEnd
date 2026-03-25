@@ -111,7 +111,7 @@ if STORAGE_ENV in ('fslink', 'filesystem'):
     STORAGES['default'] = {'BACKEND': 'django.core.files.storage.FileSystemStorage'}
     MEDIA_ROOT = '/data'  # local filesystem storage settings
 elif STORAGE_ENV == 's3':
-    STORAGES['default'] = {'BACKEND': 's3.storage.S3Storage'}
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage'}
     S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME', 'users')
     S3_CONNECTION_PARAMS = {
         'endpoint_url': os.getenv('S3_ENDPOINT_URL', 'http://minio:9000'),
