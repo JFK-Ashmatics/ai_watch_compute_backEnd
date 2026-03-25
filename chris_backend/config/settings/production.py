@@ -102,7 +102,7 @@ elif STORAGE_ENV == 's3':
         S3_CONNECTION_PARAMS=S3_CONNECTION_PARAMS,
     )
 elif STORAGE_ENV == 'azure_datalake':
-    STORAGES['default'] = {'BACKEND': 'azure.storage.AzureDataLakeStorage'}
+    STORAGES['default'] = {'BACKEND': 'storages.backends.azure_storage.AzureStorage'}
     AZURE_DATALAKE_FILESYSTEM_NAME = get_secret('AZURE_DATALAKE_FILESYSTEM_NAME')
     _azure_account_url = get_secret('AZURE_DATALAKE_ACCOUNT_URL')
     _azure_account_key = get_secret('AZURE_DATALAKE_ACCOUNT_KEY', default='')
