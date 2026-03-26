@@ -6,6 +6,7 @@ psycopg[binary,pool]
 environs==14.5.0
 python-swiftclient==4.9.0
 django-storage-swift==1.4.0
+django-storages[azure]==1.14.4
 boto3>=1.36.0
 azure-storage-file-datalake>=12.17.0
 azure-storage-blob>=12.23.0

@@ -120,7 +120,7 @@ elif STORAGE_ENV == 's3':
         'region_name': os.getenv('S3_REGION', None),
     }
 elif STORAGE_ENV == 'azure_datalake':
-    STORAGES['default'] = {'BACKEND': 'django.core.files.storage.FileSystemStorage'}
+    STORAGES['default'] = {'BACKEND': 'storages.backends.azure_storage.AzureStorage'}
     AZURE_DATALAKE_FILESYSTEM_NAME = os.getenv('AZURE_DATALAKE_FILESYSTEM_NAME', 'users')
     _azure_conn_string = os.getenv('AZURE_DATALAKE_CONNECTION_STRING', '')
     if _azure_conn_string:
@@ -134,6 +134,11 @@ elif STORAGE_ENV == 'azure_datalake':
             'account_url': os.getenv('AZURE_DATALAKE_ACCOUNT_URL'),
             'account_key': os.getenv('AZURE_DATALAKE_ACCOUNT_KEY', ''),
         }
+    # django-storages AzureStorage settings (needed for Django's file handling layer)
+    _acct_url = os.getenv('AZURE_DATALAKE_ACCOUNT_URL', '')
+    AZURE_CONTAINER = AZURE_DATALAKE_FILESYSTEM_NAME
+    AZURE_ACCOUNT_NAME = _acct_url.split('//')[1].split('.')[0] if '//' in _acct_url else ''
+    AZURE_ACCOUNT_KEY = os.getenv('AZURE_DATALAKE_ACCOUNT_KEY', '')
 
 try:
     verify_storage_connection(

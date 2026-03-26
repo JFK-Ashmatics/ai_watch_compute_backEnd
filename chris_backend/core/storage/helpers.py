@@ -22,7 +22,7 @@ def connect_storage(settings) -> StorageManager:
         return FilesystemManager(settings.MEDIA_ROOT)
     elif storage_name == 'S3Storage':
         return S3Manager(settings.S3_BUCKET_NAME, settings.S3_CONNECTION_PARAMS)
-    elif storage_name == 'AzureDataLakeStorage':
+    elif storage_name in ('AzureDataLakeStorage', 'AzureStorage'):
         return AzureDataLakeManager(settings.AZURE_DATALAKE_FILESYSTEM_NAME,
                                     settings.AZURE_DATALAKE_CONNECTION_PARAMS)
     raise ValueError(f'Unsupported storage system: {storage_name}')
